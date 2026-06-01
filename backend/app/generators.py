@@ -12,6 +12,7 @@ def caddyfile(domain: str, users: list[dict]) -> str:
         f"\n\t\t\tbasic_auth {u['username']} {u['password']}" for u in users
     )
     return f"""{{
+\tdebug
 \tservers {{
 \t\tprotocols h1 h2
 \t}}
