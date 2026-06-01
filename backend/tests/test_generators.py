@@ -29,6 +29,7 @@ def test_caddyfile_contains_domain_and_routes():
     assert "@naive method CONNECT" in text
     assert "reverse_proxy h2c://singbox:1080" in text
     assert "header_up Proxy-Authorization {header.Proxy-Authorization}" in text
+    assert "flush_interval -1" in text
     assert "handle /api/* {" in text
     assert "handle /sub/* {" in text
     assert "handle_path /admin/* {" in text
