@@ -5,6 +5,7 @@ from app.generators import caddyfile, subscription
 
 def test_caddyfile_contains_domain_and_routes():
     text = caddyfile("vpn.example.com", [])
+    assert "debug" in text
     assert "protocols h1 h2" in text
     assert "vpn.example.com {" in text
     assert "forward_proxy {" in text
