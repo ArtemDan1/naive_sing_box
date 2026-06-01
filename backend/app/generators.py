@@ -29,6 +29,7 @@ def caddyfile(domain: str) -> str:
 \thandle @naive {{
 \t\treverse_proxy h2c://singbox:1080 {{
 \t\t\theader_up Proxy-Authorization {{header.Proxy-Authorization}}
+\t\t\tflush_interval -1
 \t\t}}
 \t}}
 \thandle /api/* {{
