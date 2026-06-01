@@ -17,9 +17,10 @@ def test_singbox_config_includes_only_given_users():
     assert cfg["outbounds"] == [{"type": "direct"}]
 
 
-def test_singbox_config_empty_users():
+def test_singbox_config_empty_users_omits_inbound():
     cfg = json.loads(singbox_config([]))
-    assert cfg["inbounds"][0]["users"] == []
+    assert cfg["inbounds"] == []
+    assert cfg["outbounds"] == [{"type": "direct"}]
 
 
 def test_caddyfile_contains_domain_and_routes():
