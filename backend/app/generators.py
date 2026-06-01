@@ -19,12 +19,23 @@ def singbox_config(users: list[dict]) -> str:
 
 def caddyfile(domain: str) -> str:
     return f"""{domain} {{
-  @naive method CONNECT
-  handle @naive {{ reverse_proxy h2c://singbox:1080 }}
-  handle /api/* {{ reverse_proxy fastapi:8000 }}
-  handle /sub/* {{ reverse_proxy fastapi:8000 }}
-  handle_path /admin/* {{ reverse_proxy frontend:80 }}
-  handle {{ root * /srv/fallback; file_server }}
+\t@naive method CONNECT
+\thandle @naive {{
+\t\treverse_proxy h2c://singbox:1080
+\t}}
+\thandle /api/* {{
+\t\treverse_proxy fastapi:8000
+\t}}
+\thandle /sub/* {{
+\t\treverse_proxy fastapi:8000
+\t}}
+\thandle_path /admin/* {{
+\t\treverse_proxy frontend:80
+\t}}
+\thandle {{
+\t\troot * /srv/fallback
+\t\tfile_server
+\t}}
 }}
 """
 

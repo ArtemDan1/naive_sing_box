@@ -27,10 +27,18 @@ def test_caddyfile_contains_domain_and_routes():
     assert "vpn.example.com {" in text
     assert "@naive method CONNECT" in text
     assert "reverse_proxy h2c://singbox:1080" in text
-    assert "handle /api/* { reverse_proxy fastapi:8000 }" in text
-    assert "handle /sub/* { reverse_proxy fastapi:8000 }" in text
-    assert "handle_path /admin/* { reverse_proxy frontend:80 }" in text
+    assert "handle /api/* {" in text
+    assert "handle /sub/* {" in text
+    assert "handle_path /admin/* {" in text
+    assert "reverse_proxy fastapi:8000" in text
+    assert "reverse_proxy frontend:80" in text
     assert "/srv/fallback" in text
+    assert "file_server" in text
+    # Каждый блок { должен открываться в конце строки (валидный Caddyfile-синтаксис)
+    for line in text.splitlines():
+        if line.rstrip().endswith("{"):
+            continue
+        assert "{" not in line.replace("{{", ""), f"inline block not allowed: {line!r}"
 
 
 def test_subscription_outbound():
