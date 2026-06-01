@@ -16,7 +16,7 @@ def singbox_config(users: list[dict]) -> str:
             "users": users,
         })
     cfg = {
-        "log": {"level": "warn"},
+        "log": {"level": "info"},
         "inbounds": inbounds,
         "outbounds": [{"type": "direct"}],
     }
