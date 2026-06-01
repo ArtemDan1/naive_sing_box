@@ -25,6 +25,7 @@ def test_singbox_config_empty_users_omits_inbound():
 
 def test_caddyfile_contains_domain_and_routes():
     text = caddyfile("vpn.example.com")
+    assert "protocols h1 h2" in text
     assert "vpn.example.com {" in text
     assert "@naive method CONNECT" in text
     assert "reverse_proxy h2c://singbox:1080" in text
