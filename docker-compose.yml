@@ -30,6 +30,11 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
 
   singbox:
     image: ghcr.io/sagernet/sing-box:latest
@@ -37,6 +42,8 @@ services:
     command: ["run", "-c", "/etc/sing-box/config.json"]
     volumes:
       - singbox_conf:/etc/sing-box
+    depends_on:
+      fastapi: { condition: service_healthy }
     restart: unless-stopped
 
   caddy:
