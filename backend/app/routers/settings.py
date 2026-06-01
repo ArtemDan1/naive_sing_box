@@ -6,7 +6,7 @@ from app.deps import get_current_admin, get_reloader
 from app.reloader import Reloader
 from app.models import Settings
 from app.schemas import SettingsIn, SettingsOut
-from app.services import apply_caddy
+from app.services import apply_proxy
 
 router = APIRouter(tags=["settings"], dependencies=[Depends(get_current_admin)])
 
@@ -35,5 +35,5 @@ def put_settings(
     s = _get_or_create(db)
     s.domain = body.domain
     db.commit()
-    apply_caddy(body.domain, reloader)
+    apply_proxy(db, reloader)
     return SettingsOut(domain=s.domain)

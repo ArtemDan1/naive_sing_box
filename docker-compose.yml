@@ -19,12 +19,9 @@ services:
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       DOMAIN: ${DOMAIN}
-      SINGBOX_CONFIG_PATH: /data/singbox/config.json
       CADDYFILE_PATH: /data/caddy/Caddyfile
-      SINGBOX_CONTAINER: singbox
       CADDY_CONTAINER: caddy
     volumes:
-      - singbox_conf:/data/singbox
       - caddy_conf:/data/caddy
       - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
@@ -36,18 +33,8 @@ services:
       timeout: 5s
       retries: 12
 
-  singbox:
-    image: ghcr.io/sagernet/sing-box:latest
-    container_name: singbox
-    command: ["run", "-c", "/etc/sing-box/config.json"]
-    volumes:
-      - singbox_conf:/etc/sing-box
-    depends_on:
-      fastapi: { condition: service_healthy }
-    restart: unless-stopped
-
   caddy:
-    image: caddy:2
+    build: ./caddy
     container_name: caddy
     ports: ["80:80", "443:443"]
     command: ["caddy", "run", "--config", "/etc/caddy/Caddyfile", "--adapter", "caddyfile"]
@@ -55,7 +42,8 @@ services:
       - caddy_conf:/etc/caddy
       - ./caddy/fallback:/srv/fallback:ro
       - caddy_data:/data
-    depends_on: [fastapi, singbox]
+    depends_on:
+      fastapi: { condition: service_healthy }
     restart: unless-stopped
 
   frontend:
@@ -64,6 +52,5 @@ services:
 
 volumes:
   pgdata:
-  singbox_conf:
   caddy_conf:
   caddy_data:

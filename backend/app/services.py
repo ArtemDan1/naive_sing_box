@@ -3,8 +3,8 @@ import os
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.generators import singbox_config, caddyfile
-from app.models import Client
+from app.generators import caddyfile
+from app.models import Client, Settings
 from app.reloader import Reloader
 
 
@@ -14,13 +14,14 @@ def _write(path: str, content: str) -> None:
         f.write(content)
 
 
-def apply_singbox(db: Session, reloader: Reloader) -> None:
+def apply_proxy(db: Session, reloader: Reloader) -> None:
+    """Regenerate the Caddyfile from the current domain + enabled clients and
+    reload Caddy (the naive server via forward_proxy)."""
+    s = db.query(Settings).first()
+    domain = s.domain if s else ""
+    if not domain:
+        return
     clients = db.query(Client).filter_by(enabled=True).all()
     users = [{"username": c.username, "password": c.password} for c in clients]
-    _write(settings.singbox_config_path, singbox_config(users))
-    reloader.restart(settings.singbox_container)
-
-
-def apply_caddy(domain: str, reloader: Reloader) -> None:
-    _write(settings.caddyfile_path, caddyfile(domain))
+    _write(settings.caddyfile_path, caddyfile(domain, users))
     reloader.restart(settings.caddy_container)

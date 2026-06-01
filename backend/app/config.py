@@ -11,9 +11,7 @@ class AppSettings(BaseSettings):
     admin_username: str = "admin"
     admin_password: str = "admin"
     domain: str = ""
-    singbox_config_path: str = "/data/singbox/config.json"
     caddyfile_path: str = "/data/caddy/Caddyfile"
-    singbox_container: str = "singbox"
     caddy_container: str = "caddy"
 
 
