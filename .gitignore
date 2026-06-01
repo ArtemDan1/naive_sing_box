@@ -4,3 +4,6 @@ __pycache__/
 node_modules/
 dist/
 .venv/
+
+# alembic local sqlite scratch
+backend/_tmp_*.db
