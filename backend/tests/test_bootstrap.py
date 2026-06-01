@@ -9,9 +9,6 @@ def test_bootstrap_creates_admin_and_settings(db_session, monkeypatch, tmp_path)
     monkeypatch.setattr(bootstrap.settings, "admin_password", "rootpw")
     monkeypatch.setattr(bootstrap.settings, "domain", "vpn.example.com")
     monkeypatch.setattr(
-        "app.services.settings.singbox_config_path", str(tmp_path / "config.json")
-    )
-    monkeypatch.setattr(
         "app.services.settings.caddyfile_path", str(tmp_path / "Caddyfile")
     )
     db_session.query(Admin).delete()
@@ -26,7 +23,7 @@ def test_bootstrap_creates_admin_and_settings(db_session, monkeypatch, tmp_path)
 def test_bootstrap_idempotent(db_session, monkeypatch, tmp_path):
     monkeypatch.setattr(bootstrap.settings, "domain", "")
     monkeypatch.setattr(
-        "app.services.settings.singbox_config_path", str(tmp_path / "config.json")
+        "app.services.settings.caddyfile_path", str(tmp_path / "Caddyfile")
     )
     bootstrap.run(db_session, reloader=MagicMock())
     bootstrap.run(db_session, reloader=MagicMock())

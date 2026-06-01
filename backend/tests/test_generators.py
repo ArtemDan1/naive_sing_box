@@ -1,36 +1,14 @@
 import json
 
-from app.generators import singbox_config, caddyfile, subscription
-
-
-def test_singbox_config_includes_only_given_users():
-    users = [
-        {"username": "alice", "password": "pw1"},
-        {"username": "bob", "password": "pw2"},
-    ]
-    cfg = json.loads(singbox_config(users))
-    inbound = cfg["inbounds"][0]
-    assert inbound["type"] == "naive"
-    assert inbound["listen"] == "0.0.0.0"
-    assert inbound["listen_port"] == 1080
-    assert inbound["users"] == users
-    assert cfg["outbounds"] == [{"type": "direct"}]
-
-
-def test_singbox_config_empty_users_omits_inbound():
-    cfg = json.loads(singbox_config([]))
-    assert cfg["inbounds"] == []
-    assert cfg["outbounds"] == [{"type": "direct"}]
+from app.generators import caddyfile, subscription
 
 
 def test_caddyfile_contains_domain_and_routes():
-    text = caddyfile("vpn.example.com")
+    text = caddyfile("vpn.example.com", [])
     assert "protocols h1 h2" in text
     assert "vpn.example.com {" in text
-    assert "@naive method CONNECT" in text
-    assert "reverse_proxy h2c://singbox:1080" in text
-    assert "header_up Proxy-Authorization {header.Proxy-Authorization}" in text
-    assert "flush_interval -1" in text
+    assert "forward_proxy {" in text
+    assert "hide_ip" in text
     assert "handle /api/* {" in text
     assert "handle /sub/* {" in text
     assert "handle_path /admin/* {" in text
@@ -38,6 +16,21 @@ def test_caddyfile_contains_domain_and_routes():
     assert "reverse_proxy frontend:80" in text
     assert "/srv/fallback" in text
     assert "file_server" in text
+
+
+def test_caddyfile_embeds_user_basic_auth():
+    users = [
+        {"username": "alice", "password": "pw1"},
+        {"username": "bob", "password": "pw2"},
+    ]
+    text = caddyfile("vpn.example.com", users)
+    assert "basic_auth alice pw1" in text
+    assert "basic_auth bob pw2" in text
+
+
+def test_caddyfile_no_users_has_no_basic_auth():
+    text = caddyfile("vpn.example.com", [])
+    assert "basic_auth" not in text
 
 
 def test_subscription_outbound():

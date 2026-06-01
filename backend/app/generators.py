@@ -1,29 +1,16 @@
 import json
 
 
-def singbox_config(users: list[dict]) -> str:
-    # The naive inbound requires at least one user; sing-box refuses to start
-    # with an empty users list ("missing users"). When there are no enabled
-    # clients we omit the inbound entirely so the process still starts cleanly.
-    inbounds = []
-    if users:
-        inbounds.append({
-            "type": "naive",
-            "tag": "naive-in",
-            "listen": "0.0.0.0",
-            "listen_port": 1080,
-            "network": "tcp",
-            "users": users,
-        })
-    cfg = {
-        "log": {"level": "info"},
-        "inbounds": inbounds,
-        "outbounds": [{"type": "direct"}],
-    }
-    return json.dumps(cfg, indent=2)
+def caddyfile(domain: str, users: list[dict]) -> str:
+    """Caddyfile for a NaiveProxy server based on caddy-forwardproxy.
 
-
-def caddyfile(domain: str) -> str:
+    Caddy itself is the naive endpoint: forward_proxy handles authenticated
+    CONNECT (proxy) traffic, while non-proxy requests fall through to the
+    reverse_proxy routes (/api, /sub, /admin) and finally the masking site.
+    """
+    auth_lines = "".join(
+        f"\n\t\t\tbasic_auth {u['username']} {u['password']}" for u in users
+    )
     return f"""{{
 \tservers {{
 \t\tprotocols h1 h2
@@ -31,25 +18,24 @@ def caddyfile(domain: str) -> str:
 }}
 
 {domain} {{
-\t@naive method CONNECT
-\thandle @naive {{
-\t\treverse_proxy h2c://singbox:1080 {{
-\t\t\theader_up Proxy-Authorization {{header.Proxy-Authorization}}
-\t\t\tflush_interval -1
+\troute {{
+\t\tforward_proxy {{{auth_lines}
+\t\t\thide_ip
+\t\t\thide_via
 \t\t}}
-\t}}
-\thandle /api/* {{
-\t\treverse_proxy fastapi:8000
-\t}}
-\thandle /sub/* {{
-\t\treverse_proxy fastapi:8000
-\t}}
-\thandle_path /admin/* {{
-\t\treverse_proxy frontend:80
-\t}}
-\thandle {{
-\t\troot * /srv/fallback
-\t\tfile_server
+\t\thandle /api/* {{
+\t\t\treverse_proxy fastapi:8000
+\t\t}}
+\t\thandle /sub/* {{
+\t\t\treverse_proxy fastapi:8000
+\t\t}}
+\t\thandle_path /admin/* {{
+\t\t\treverse_proxy frontend:80
+\t\t}}
+\t\thandle {{
+\t\t\troot * /srv/fallback
+\t\t\tfile_server
+\t\t}}
 \t}}
 }}
 """

@@ -34,11 +34,8 @@ def reloader():
 
 @pytest.fixture
 def client(db_session, reloader, tmp_path, monkeypatch):
-    # Redirect generated config paths into tmp so CRUD endpoints that call
-    # apply_singbox/apply_caddy do not touch the real /data filesystem.
-    monkeypatch.setattr(
-        "app.services.settings.singbox_config_path", str(tmp_path / "config.json")
-    )
+    # Redirect the generated Caddyfile into tmp so CRUD endpoints that call
+    # apply_proxy do not touch the real /data filesystem.
     monkeypatch.setattr(
         "app.services.settings.caddyfile_path", str(tmp_path / "Caddyfile")
     )

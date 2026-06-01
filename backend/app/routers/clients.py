@@ -8,7 +8,7 @@ from app.deps import get_current_admin, get_reloader
 from app.reloader import Reloader
 from app.models import Client
 from app.schemas import ClientCreate, ClientUpdate, ClientOut
-from app.services import apply_singbox
+from app.services import apply_proxy
 
 router = APIRouter(tags=["clients"], dependencies=[Depends(get_current_admin)])
 
@@ -32,7 +32,7 @@ def create_client(
     db.add(c)
     db.commit()
     db.refresh(c)
-    apply_singbox(db, reloader)
+    apply_proxy(db, reloader)
     return c
 
 
@@ -52,7 +52,7 @@ def update_client(
         c.enabled = body.enabled
     db.commit()
     db.refresh(c)
-    apply_singbox(db, reloader)
+    apply_proxy(db, reloader)
     return c
 
 
@@ -67,4 +67,4 @@ def delete_client(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
     db.delete(c)
     db.commit()
-    apply_singbox(db, reloader)
+    apply_proxy(db, reloader)
