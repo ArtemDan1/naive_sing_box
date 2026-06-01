@@ -2,16 +2,22 @@ import json
 
 
 def singbox_config(users: list[dict]) -> str:
-    cfg = {
-        "log": {"level": "warn"},
-        "inbounds": [{
+    # The naive inbound requires at least one user; sing-box refuses to start
+    # with an empty users list ("missing users"). When there are no enabled
+    # clients we omit the inbound entirely so the process still starts cleanly.
+    inbounds = []
+    if users:
+        inbounds.append({
             "type": "naive",
             "tag": "naive-in",
             "listen": "0.0.0.0",
             "listen_port": 1080,
             "network": "tcp",
             "users": users,
-        }],
+        })
+    cfg = {
+        "log": {"level": "warn"},
+        "inbounds": inbounds,
         "outbounds": [{"type": "direct"}],
     }
     return json.dumps(cfg, indent=2)
