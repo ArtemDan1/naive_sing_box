@@ -25,12 +25,14 @@ def singbox_config(users: list[dict]) -> str:
 
 def caddyfile(domain: str) -> str:
     return f"""{{
+\tdebug
 \tservers {{
 \t\tprotocols h1 h2
 \t}}
 }}
 
 {domain} {{
+\tlog
 \t@naive method CONNECT
 \thandle @naive {{
 \t\treverse_proxy h2c://singbox:1080 {{
