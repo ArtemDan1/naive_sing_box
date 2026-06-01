@@ -23,7 +23,7 @@ def caddyfile(domain: str) -> str:
   handle @naive {{ reverse_proxy h2c://singbox:1080 }}
   handle /api/* {{ reverse_proxy fastapi:8000 }}
   handle /sub/* {{ reverse_proxy fastapi:8000 }}
-  handle /admin/* {{ reverse_proxy frontend:80 }}
+  handle_path /admin/* {{ reverse_proxy frontend:80 }}
   handle {{ root * /srv/fallback; file_server }}
 }}
 """

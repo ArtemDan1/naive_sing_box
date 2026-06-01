@@ -29,7 +29,7 @@ def test_caddyfile_contains_domain_and_routes():
     assert "reverse_proxy h2c://singbox:1080" in text
     assert "handle /api/* { reverse_proxy fastapi:8000 }" in text
     assert "handle /sub/* { reverse_proxy fastapi:8000 }" in text
-    assert "handle /admin/* { reverse_proxy frontend:80 }" in text
+    assert "handle_path /admin/* { reverse_proxy frontend:80 }" in text
     assert "/srv/fallback" in text
 
 
