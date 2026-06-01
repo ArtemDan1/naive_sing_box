@@ -99,6 +99,12 @@ settings        (singleton-строка)
 Первичный админ создаётся при старте из переменных окружения
 (`ADMIN_USERNAME`, `ADMIN_PASSWORD`), если таблица пуста.
 
+Домен bootstrap-ится из переменной окружения `DOMAIN` при первом старте:
+если строка settings пуста, она создаётся со значением `DOMAIN` из env, и
+Caddyfile генерируется до старта caddy (чтобы ACME получил сертификат на
+первом запуске). Дальше домен можно менять через админку (`PUT /api/settings`),
+что регенерирует Caddyfile и перезапускает caddy.
+
 ## API
 
 Базовый префикс `/api`. Всё кроме login — под JWT (Bearer).
@@ -111,7 +117,7 @@ settings        (singleton-строка)
 | PATCH  | `/api/clients/{id}`   | изменить label / enabled |
 | DELETE | `/api/clients/{id}`   | удалить |
 | GET    | `/api/settings`       | получить домен |
-| PUT    | `/api/settings`       | задать домен → регенерация Caddyfile + reload caddy |
+| PUT    | `/api/settings`       | сменить домен → регенерация Caddyfile + reload caddy (первичный домен берётся из env `DOMAIN`) |
 
 Публичный эндпоинт (без JWT, через caddy):
 
