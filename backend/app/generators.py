@@ -27,7 +27,9 @@ def caddyfile(domain: str) -> str:
     return f"""{domain} {{
 \t@naive method CONNECT
 \thandle @naive {{
-\t\treverse_proxy h2c://singbox:1080
+\t\treverse_proxy h2c://singbox:1080 {{
+\t\t\theader_up Proxy-Authorization {{header.Proxy-Authorization}}
+\t\t}}
 \t}}
 \thandle /api/* {{
 \t\treverse_proxy fastapi:8000
