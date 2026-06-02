@@ -23,6 +23,7 @@ def caddyfile(domain: str, users: list[dict]) -> str:
 \t\tforward_proxy {{{auth_lines}
 \t\t\thide_ip
 \t\t\thide_via
+\t\t\tprobe_resistance
 \t\t}}
 \t\thandle /api/* {{
 \t\t\treverse_proxy fastapi:8000

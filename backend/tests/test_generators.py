@@ -10,6 +10,9 @@ def test_caddyfile_contains_domain_and_routes():
     assert "vpn.example.com {" in text
     assert "forward_proxy {" in text
     assert "hide_ip" in text
+    # probe_resistance lets non-proxy requests fall through to the web routes
+    # instead of getting a 407 (otherwise /admin and the masking site break).
+    assert "probe_resistance" in text
     assert "handle /api/* {" in text
     assert "handle /sub/* {" in text
     assert "handle_path /admin/* {" in text
