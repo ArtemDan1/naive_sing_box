@@ -4,7 +4,7 @@ from app.generators import caddyfile, subscription
 
 
 def test_caddyfile_contains_domain_and_routes():
-    text = caddyfile("vpn.example.com", [])
+    text = caddyfile("vpn.example.com", [{"username": "u", "password": "p"}])
     assert "debug" in text
     assert "protocols h1 h2" in text
     assert "vpn.example.com {" in text
@@ -32,9 +32,16 @@ def test_caddyfile_embeds_user_basic_auth():
     assert "basic_auth bob pw2" in text
 
 
-def test_caddyfile_no_users_has_no_basic_auth():
+def test_caddyfile_no_users_omits_forward_proxy():
+    # forward_proxy with probe_resistance requires auth; with no users Caddy
+    # refuses to start, so the whole proxy block must be omitted.
     text = caddyfile("vpn.example.com", [])
     assert "basic_auth" not in text
+    assert "forward_proxy" not in text
+    assert "probe_resistance" not in text
+    # the web routes must still be present so the panel/site keeps working
+    assert "handle /api/* {" in text
+    assert "/srv/fallback" in text
 
 
 def test_subscription_full_profile():
