@@ -63,10 +63,13 @@ def _naive_outbound(domain: str, username: str, password: str) -> dict:
     }
 
 
-def subscription(domain: str, username: str, password: str) -> str:
+def subscription(domain: str, username: str, password: str, compact: bool = False) -> str:
     """Full standalone sing-box profile (log + mixed inbound + naive outbound +
     route). For "bare" clients (sing-box CLI/app, Karing) that run the config
-    verbatim and need an inbound to listen on."""
+    verbatim and need an inbound to listen on.
+
+    `compact=True` emits single-line JSON (used for Happ's custom-tunnel-config
+    directive, which must occupy one line)."""
     cfg = {
         "log": {"level": "info"},
         "inbounds": [{
@@ -78,6 +81,8 @@ def subscription(domain: str, username: str, password: str) -> str:
         "outbounds": [_naive_outbound(domain, username, password)],
         "route": {"final": "proxy"},
     }
+    if compact:
+        return json.dumps(cfg, separators=(",", ":"))
     return json.dumps(cfg, indent=2)
 
 

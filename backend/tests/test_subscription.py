@@ -25,19 +25,37 @@ def test_subscription_returns_full_profile_by_default(client, db_session):
     assert prof["route"]["final"] == "proxy"
 
 
-def test_subscription_outbounds_only_for_managed_clients(client, db_session):
-    # Hiddify / Happ inject their own inbound+route; an embedded inbound breaks
-    # them, so they must receive an outbounds-only fragment (matched by UA).
+def test_subscription_outbounds_only_for_hiddify(client, db_session):
+    # Hiddify injects its own inbound+route; an embedded inbound breaks it, so
+    # it must receive an outbounds-only fragment (matched by UA).
     _seed_domain(db_session)
     db_session.add(
         Client(label="My Phone", username="alice", password="pw1", sub_uuid="abc", enabled=True)
     )
     db_session.commit()
-    for ua in ("HiddifyNext/2.0.0", "Happ/1.2.3"):
-        frag = json.loads(client.get("/sub/abc", headers={"user-agent": ua}).text)
-        assert "inbounds" not in frag
-        assert "route" not in frag
-        assert frag["outbounds"][0]["type"] == "naive"
+    frag = json.loads(client.get("/sub/abc", headers={"user-agent": "HiddifyNext/2.0.0"}).text)
+    assert "inbounds" not in frag
+    assert "route" not in frag
+    assert frag["outbounds"][0]["type"] == "naive"
+
+
+def test_subscription_custom_tunnel_config_for_happ(client, db_session):
+    # Happ defaults to the Xray core (which can't parse sing-box); the
+    # custom-tunnel-config directive makes Happ Desktop use the sing-box core
+    # with our full profile.
+    _seed_domain(db_session)
+    db_session.add(
+        Client(label="My Phone", username="alice", password="pw1", sub_uuid="abc", enabled=True)
+    )
+    db_session.commit()
+    text = client.get("/sub/abc", headers={"user-agent": "Happ/1.2.3"}).text
+    prefix = "#custom-tunnel-config: "
+    assert text.startswith(prefix)
+    assert "\n" not in text  # single-line directive
+    prof = json.loads(text[len(prefix):])
+    assert prof["inbounds"][0]["type"] == "mixed"
+    assert prof["outbounds"][0]["type"] == "naive"
+    assert prof["route"]["final"] == "proxy"
 
 
 def test_subscription_headers(client, db_session):
