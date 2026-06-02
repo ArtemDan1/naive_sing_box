@@ -43,8 +43,20 @@ def caddyfile(domain: str, users: list[dict]) -> str:
 """
 
 
-def subscription(domain: str, username: str, password: str) -> str:
+def subscription(domain: str, username: str, password: str, name: str = "") -> str:
+    """Full sing-box client profile (log + mixed inbound + naive outbound + route).
+
+    `name` is intentionally not embedded in the profile body — it is only used
+    for the subscription response headers (profile title / filename).
+    """
     cfg = {
+        "log": {"level": "info"},
+        "inbounds": [{
+            "type": "mixed",
+            "tag": "mixed-in",
+            "listen": "127.0.0.1",
+            "listen_port": 2082,
+        }],
         "outbounds": [{
             "type": "naive",
             "tag": "proxy",
@@ -53,6 +65,7 @@ def subscription(domain: str, username: str, password: str) -> str:
             "username": username,
             "password": password,
             "tls": {"enabled": True, "server_name": domain},
-        }]
+        }],
+        "route": {"final": "proxy"},
     }
     return json.dumps(cfg, indent=2)

@@ -37,12 +37,28 @@ def test_caddyfile_no_users_has_no_basic_auth():
     assert "basic_auth" not in text
 
 
-def test_subscription_outbound():
-    sub = json.loads(subscription("vpn.example.com", "alice", "pw1"))
-    out = sub["outbounds"][0]
+def test_subscription_full_profile():
+    prof = json.loads(subscription("vpn.example.com", "alice", "pw1", "Phone"))
+    assert prof["log"]["level"] == "info"
+
+    inb = prof["inbounds"][0]
+    assert inb["type"] == "mixed"
+    assert inb["tag"] == "mixed-in"
+    assert inb["listen"] == "127.0.0.1"
+    assert inb["listen_port"] == 2082
+
+    out = prof["outbounds"][0]
     assert out["type"] == "naive"
+    assert out["tag"] == "proxy"
     assert out["server"] == "vpn.example.com"
     assert out["server_port"] == 443
     assert out["username"] == "alice"
     assert out["password"] == "pw1"
     assert out["tls"] == {"enabled": True, "server_name": "vpn.example.com"}
+
+    assert prof["route"]["final"] == "proxy"
+
+
+def test_subscription_name_not_in_body():
+    prof = json.loads(subscription("vpn.example.com", "alice", "pw1", "Phone"))
+    assert "Phone" not in json.dumps(prof)
