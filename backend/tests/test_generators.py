@@ -7,7 +7,9 @@ def test_caddyfile_contains_domain_and_routes():
     text = caddyfile("vpn.example.com", [{"username": "u", "password": "p"}])
     assert "debug" in text
     assert "protocols h1 h2" in text
-    assert "vpn.example.com {" in text
+    # ":443," catch-all (no host matcher) is required so naive CONNECT requests
+    # — whose Host is the *destination*, not our domain — reach forward_proxy.
+    assert ":443, vpn.example.com {" in text
     assert "forward_proxy {" in text
     assert "hide_ip" in text
     # probe_resistance lets non-proxy requests fall through to the web routes

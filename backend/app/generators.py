@@ -31,7 +31,7 @@ def caddyfile(domain: str, users: list[dict]) -> str:
 \t}}
 }}
 
-{domain} {{
+:443, {domain} {{
 \troute {{
 {forward_proxy_block}\t\thandle /api/* {{
 \t\t\treverse_proxy fastapi:8000
