@@ -1,6 +1,6 @@
 import json
 
-from app.generators import caddyfile, subscription
+from app.generators import caddyfile, subscription, subscription_outbounds
 
 
 def test_caddyfile_contains_domain_and_routes():
@@ -47,7 +47,7 @@ def test_caddyfile_no_users_omits_forward_proxy():
 
 
 def test_subscription_full_profile():
-    prof = json.loads(subscription("vpn.example.com", "alice", "pw1", "Phone"))
+    prof = json.loads(subscription("vpn.example.com", "alice", "pw1"))
     assert prof["log"]["level"] == "info"
 
     inb = prof["inbounds"][0]
@@ -68,6 +68,15 @@ def test_subscription_full_profile():
     assert prof["route"]["final"] == "proxy"
 
 
-def test_subscription_name_not_in_body():
-    prof = json.loads(subscription("vpn.example.com", "alice", "pw1", "Phone"))
-    assert "Phone" not in json.dumps(prof)
+def test_subscription_outbounds_only():
+    # managed clients (Hiddify/Happ) inject their own inbound+route; an embedded
+    # inbound breaks them, so this variant must contain ONLY outbounds.
+    frag = json.loads(subscription_outbounds("vpn.example.com", "alice", "pw1"))
+    assert set(frag.keys()) == {"outbounds"}
+    assert "inbounds" not in frag
+    assert "route" not in frag
+    out = frag["outbounds"][0]
+    assert out["type"] == "naive"
+    assert out["server"] == "vpn.example.com"
+    assert out["username"] == "alice"
+    assert out["password"] == "pw1"

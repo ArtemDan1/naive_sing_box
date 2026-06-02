@@ -149,7 +149,12 @@ docker compose logs caddy | grep -i certificate
 (24 ч) и `content-disposition`, чтобы клиент показал имя профиля и сам обновлял
 подписку.
 
-Профиль импортируется в **sing-box app**, **Hiddify** и **Happ Desktop**.
+Формат подбирается по `User-Agent`: «управляемые» клиенты (**Hiddify**, **Happ**)
+получают фрагмент только с `outbounds` — они сами добавляют свой `tun`-inbound и
+маршрутизацию, а встроенный inbound их ломает. «Голые» клиенты (**sing-box CLI**,
+**sing-box app**, **Karing**) получают полный профиль выше. Ссылка `/sub/<uuid>`
+одна и та же — различие прозрачно.
+
 В админке у каждого клиента есть кнопки быстрого импорта:
 
 - **sing-box** — `sing-box://import-remote-profile?url=<sub>`

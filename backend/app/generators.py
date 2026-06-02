@@ -51,12 +51,22 @@ def caddyfile(domain: str, users: list[dict]) -> str:
 """
 
 
-def subscription(domain: str, username: str, password: str, name: str = "") -> str:
-    """Full sing-box client profile (log + mixed inbound + naive outbound + route).
+def _naive_outbound(domain: str, username: str, password: str) -> dict:
+    return {
+        "type": "naive",
+        "tag": "proxy",
+        "server": domain,
+        "server_port": 443,
+        "username": username,
+        "password": password,
+        "tls": {"enabled": True, "server_name": domain},
+    }
 
-    `name` is intentionally not embedded in the profile body — it is only used
-    for the subscription response headers (profile title / filename).
-    """
+
+def subscription(domain: str, username: str, password: str) -> str:
+    """Full standalone sing-box profile (log + mixed inbound + naive outbound +
+    route). For "bare" clients (sing-box CLI/app, Karing) that run the config
+    verbatim and need an inbound to listen on."""
     cfg = {
         "log": {"level": "info"},
         "inbounds": [{
@@ -65,15 +75,14 @@ def subscription(domain: str, username: str, password: str, name: str = "") -> s
             "listen": "127.0.0.1",
             "listen_port": 2082,
         }],
-        "outbounds": [{
-            "type": "naive",
-            "tag": "proxy",
-            "server": domain,
-            "server_port": 443,
-            "username": username,
-            "password": password,
-            "tls": {"enabled": True, "server_name": domain},
-        }],
+        "outbounds": [_naive_outbound(domain, username, password)],
         "route": {"final": "proxy"},
     }
     return json.dumps(cfg, indent=2)
+
+
+def subscription_outbounds(domain: str, username: str, password: str) -> str:
+    """Outbounds-only fragment for "managed" clients (Hiddify, Happ) that inject
+    their own tun inbound + route/dns. An embedded inbound bound to a specific
+    IP breaks them (Happ: "Listen on specific ip"; Hiddify: route conflict)."""
+    return json.dumps({"outbounds": [_naive_outbound(domain, username, password)]}, indent=2)

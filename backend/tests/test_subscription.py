@@ -8,7 +8,7 @@ def _seed_domain(db, domain="vpn.example.com"):
     db.commit()
 
 
-def test_subscription_returns_profile(client, db_session):
+def test_subscription_returns_full_profile_by_default(client, db_session):
     _seed_domain(db_session)
     db_session.add(
         Client(label="My Phone", username="alice", password="pw1", sub_uuid="abc", enabled=True)
@@ -23,6 +23,21 @@ def test_subscription_returns_profile(client, db_session):
     assert out["server"] == "vpn.example.com"
     assert out["username"] == "alice"
     assert prof["route"]["final"] == "proxy"
+
+
+def test_subscription_outbounds_only_for_managed_clients(client, db_session):
+    # Hiddify / Happ inject their own inbound+route; an embedded inbound breaks
+    # them, so they must receive an outbounds-only fragment (matched by UA).
+    _seed_domain(db_session)
+    db_session.add(
+        Client(label="My Phone", username="alice", password="pw1", sub_uuid="abc", enabled=True)
+    )
+    db_session.commit()
+    for ua in ("HiddifyNext/2.0.0", "Happ/1.2.3"):
+        frag = json.loads(client.get("/sub/abc", headers={"user-agent": ua}).text)
+        assert "inbounds" not in frag
+        assert "route" not in frag
+        assert frag["outbounds"][0]["type"] == "naive"
 
 
 def test_subscription_headers(client, db_session):
