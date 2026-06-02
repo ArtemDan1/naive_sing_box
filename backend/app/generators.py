@@ -1,4 +1,5 @@
 import json
+from urllib.parse import quote
 
 
 def caddyfile(domain: str, users: list[dict]) -> str:
@@ -84,6 +85,22 @@ def subscription(domain: str, username: str, password: str, compact: bool = Fals
     if compact:
         return json.dumps(cfg, separators=(",", ":"))
     return json.dumps(cfg, indent=2)
+
+
+def happ_custom_tunnel(domain: str, username: str, password: str, name: str) -> str:
+    """Subscription body for Happ Desktop: the `#custom-tunnel-config` directive
+    (full sing-box profile, one line) followed by a placeholder share-link.
+
+    Happ defaults to the Xray core and needs at least one ordinary share-link to
+    create a profile entry; the directive then makes it use the sing-box core for
+    the actual tunnel. The trojan:// link is a non-functional placeholder."""
+    profile = subscription(domain, username, password, compact=True)
+    label = quote(name) if name else "proxy"
+    placeholder = (
+        f"trojan://{quote(password)}@{domain}:443"
+        f"?security=tls&sni={domain}&type=tcp#{label}"
+    )
+    return f"#custom-tunnel-config: {profile}\n{placeholder}"
 
 
 def subscription_outbounds(domain: str, username: str, password: str) -> str:

@@ -49,13 +49,18 @@ def test_subscription_custom_tunnel_config_for_happ(client, db_session):
     )
     db_session.commit()
     text = client.get("/sub/abc", headers={"user-agent": "Happ/1.2.3"}).text
+    lines = text.splitlines()
+    # line 1: the custom-tunnel-config directive with the full sing-box profile
     prefix = "#custom-tunnel-config: "
-    assert text.startswith(prefix)
-    assert "\n" not in text  # single-line directive
-    prof = json.loads(text[len(prefix):])
+    assert lines[0].startswith(prefix)
+    prof = json.loads(lines[0][len(prefix):])
     assert prof["inbounds"][0]["type"] == "mixed"
     assert prof["outbounds"][0]["type"] == "naive"
     assert prof["route"]["final"] == "proxy"
+    # line 2: a placeholder share-link so Happ can create the profile entry
+    assert lines[1].startswith("trojan://")
+    assert "cdn.example.com" not in lines[1]  # uses the real domain
+    assert "vpn.example.com:443" in lines[1]
 
 
 def test_subscription_headers(client, db_session):
