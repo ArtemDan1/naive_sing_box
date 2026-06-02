@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+/* Auto light/dark: Tailwind v4 `dark:` variants follow prefers-color-scheme by default. */
+
+@layer base {
+  body {
+    @apply bg-neutral-50 text-neutral-900 antialiased;
+    @apply dark:bg-neutral-950 dark:text-neutral-100;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-1 rounded-md px-3 py-1.5
+           text-sm font-medium transition-colors cursor-pointer
+           bg-indigo-600 text-white hover:bg-indigo-500
+           focus:outline-none focus:ring-2 focus:ring-indigo-400
+           disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center gap-1 rounded-md px-2.5 py-1 text-sm font-medium
+           transition-colors cursor-pointer
+           text-neutral-700 hover:bg-neutral-200
+           dark:text-neutral-300 dark:hover:bg-neutral-800;
+  }
+  .btn-danger {
+    @apply text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40;
+  }
+  .input {
+    @apply w-full rounded-md border px-3 py-2 text-sm transition-colors
+           border-neutral-300 bg-white text-neutral-900 placeholder:text-neutral-400
+           focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-400/40
+           dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-100
+           dark:placeholder:text-neutral-500;
+  }
+  .card {
+    @apply rounded-xl border p-6 shadow-sm
+           border-neutral-200 bg-white
+           dark:border-neutral-800 dark:bg-neutral-900;
+  }
+  .link {
+    @apply text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300;
+  }
+}

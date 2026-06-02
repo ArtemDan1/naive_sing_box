@@ -117,30 +117,57 @@ docker compose logs caddy | grep -i certificate
 3. На вкладке **Клиенты** добавьте клиента (укажите имя). Будут автоматически
    сгенерированы логин/пароль и уникальный `sub_uuid`.
 4. Скопируйте ссылку **подписки** напротив клиента
-   (`https://<DOMAIN>/sub/<sub_uuid>`).
-5. Импортируйте подписку в клиент с поддержкой sing-box (приложение sing-box,
-   NekoBox и т.п.) и подключайтесь.
+   (`https://<DOMAIN>/sub/<sub_uuid>`) или используйте кнопки **sing-box** /
+   **Hiddify** / **QR** для быстрого импорта.
+5. Импортируйте подписку в клиент с поддержкой sing-box (sing-box app, Hiddify,
+   Happ Desktop) и подключайтесь.
 6. Чекбокс **Вкл** временно отключает клиента (убирает из `users[]` sing-box),
    кнопка **Удалить** удаляет навсегда. Любое изменение перезапускает sing-box
    (кратковременный обрыв активных соединений).
 
 ## Подписка
 
-`GET https://<DOMAIN>/sub/<sub_uuid>` возвращает sing-box outbound:
+`GET https://<DOMAIN>/sub/<sub_uuid>` возвращает **полный sing-box-профиль**,
+готовый к импорту:
 
 ```json
 {
-  "outbounds": [{
-    "type": "naive",
-    "tag": "proxy",
-    "server": "<DOMAIN>",
-    "server_port": 443,
-    "username": "<auto>",
-    "password": "<auto>",
-    "tls": { "enabled": true, "server_name": "<DOMAIN>" }
-  }]
+  "log": { "level": "info" },
+  "inbounds": [
+    { "type": "mixed", "tag": "mixed-in", "listen": "127.0.0.1", "listen_port": 2082 }
+  ],
+  "outbounds": [
+    { "type": "naive", "tag": "proxy", "server": "<DOMAIN>", "server_port": 443,
+      "username": "<auto>", "password": "<auto>",
+      "tls": { "enabled": true, "server_name": "<DOMAIN>" } }
+  ],
+  "route": { "final": "proxy" }
 }
 ```
+
+Ответ содержит заголовки `profile-title` (имя клиента), `profile-update-interval`
+(24 ч) и `content-disposition`, чтобы клиент показал имя профиля и сам обновлял
+подписку.
+
+Формат подбирается по `User-Agent`, ссылка `/sub/<uuid>` одна и та же:
+
+- **Hiddify** — фрагмент только с `outbounds` (Hiddify сам добавляет `tun`-inbound
+  и маршрутизацию; встроенный inbound его ломает).
+- **sing-box CLI / sing-box app / Karing** — полный профиль выше.
+
+> **Ограничения клиентов.** naive-outbound в sing-box работает поверх нативной
+> библиотеки `libcronet`, которую кладут в сборку клиента по платформам.
+> Десктопные сборки её содержат; многие мобильные — нет (тогда импорт падает с
+> `cronet: library not found`). Проверенный мобильный клиент для naive — **Karing**.
+> **Happ** не поддерживается (по умолчанию использует Xray-ядро и не парсит naive).
+
+В админке у каждого клиента есть кнопки быстрого импорта:
+
+- **sing-box** — `sing-box://import-remote-profile?url=<sub>`
+- **Hiddify** — `hiddify://import/<sub>`
+- **QR** — QR-код ссылки импорта (для сканирования телефоном).
+
+> Happ Mobile не поддерживает протокол naive — для него этот профиль не подходит.
 
 Несуществующий или отключённый `sub_uuid` отдаёт `404` (чтобы не раскрывать сервис).
 

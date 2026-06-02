@@ -1,15 +1,20 @@
 import json
 
-from app.generators import caddyfile, subscription
+from app.generators import caddyfile, subscription, subscription_outbounds
 
 
 def test_caddyfile_contains_domain_and_routes():
-    text = caddyfile("vpn.example.com", [])
+    text = caddyfile("vpn.example.com", [{"username": "u", "password": "p"}])
     assert "debug" in text
     assert "protocols h1 h2" in text
-    assert "vpn.example.com {" in text
+    # ":443," catch-all (no host matcher) is required so naive CONNECT requests
+    # — whose Host is the *destination*, not our domain — reach forward_proxy.
+    assert ":443, vpn.example.com {" in text
     assert "forward_proxy {" in text
     assert "hide_ip" in text
+    # probe_resistance lets non-proxy requests fall through to the web routes
+    # instead of getting a 407 (otherwise /admin and the masking site break).
+    assert "probe_resistance" in text
     assert "handle /api/* {" in text
     assert "handle /sub/* {" in text
     assert "handle_path /admin/* {" in text
@@ -29,17 +34,49 @@ def test_caddyfile_embeds_user_basic_auth():
     assert "basic_auth bob pw2" in text
 
 
-def test_caddyfile_no_users_has_no_basic_auth():
+def test_caddyfile_no_users_omits_forward_proxy():
+    # forward_proxy with probe_resistance requires auth; with no users Caddy
+    # refuses to start, so the whole proxy block must be omitted.
     text = caddyfile("vpn.example.com", [])
     assert "basic_auth" not in text
+    assert "forward_proxy" not in text
+    assert "probe_resistance" not in text
+    # the web routes must still be present so the panel/site keeps working
+    assert "handle /api/* {" in text
+    assert "/srv/fallback" in text
 
 
-def test_subscription_outbound():
-    sub = json.loads(subscription("vpn.example.com", "alice", "pw1"))
-    out = sub["outbounds"][0]
+def test_subscription_full_profile():
+    prof = json.loads(subscription("vpn.example.com", "alice", "pw1"))
+    assert prof["log"]["level"] == "info"
+
+    inb = prof["inbounds"][0]
+    assert inb["type"] == "mixed"
+    assert inb["tag"] == "mixed-in"
+    assert inb["listen"] == "127.0.0.1"
+    assert inb["listen_port"] == 2082
+
+    out = prof["outbounds"][0]
     assert out["type"] == "naive"
+    assert out["tag"] == "proxy"
     assert out["server"] == "vpn.example.com"
     assert out["server_port"] == 443
     assert out["username"] == "alice"
     assert out["password"] == "pw1"
     assert out["tls"] == {"enabled": True, "server_name": "vpn.example.com"}
+
+    assert prof["route"]["final"] == "proxy"
+
+
+def test_subscription_outbounds_only():
+    # managed clients (Hiddify/Happ) inject their own inbound+route; an embedded
+    # inbound breaks them, so this variant must contain ONLY outbounds.
+    frag = json.loads(subscription_outbounds("vpn.example.com", "alice", "pw1"))
+    assert set(frag.keys()) == {"outbounds"}
+    assert "inbounds" not in frag
+    assert "route" not in frag
+    out = frag["outbounds"][0]
+    assert out["type"] == "naive"
+    assert out["server"] == "vpn.example.com"
+    assert out["username"] == "alice"
+    assert out["password"] == "pw1"

@@ -11,6 +11,19 @@ def caddyfile(domain: str, users: list[dict]) -> str:
     auth_lines = "".join(
         f"\n\t\t\tbasic_auth {u['username']} {u['password']}" for u in users
     )
+    # Caddy's forward_proxy requires authentication when probe_resistance is on,
+    # so the proxy block is only emitted when there is at least one user.
+    # Without users the site still serves the panel and masking fallback.
+    forward_proxy_block = (
+        f"""\t\tforward_proxy {{{auth_lines}
+\t\t\thide_ip
+\t\t\thide_via
+\t\t\tprobe_resistance
+\t\t}}
+"""
+        if users
+        else ""
+    )
     return f"""{{
 \tdebug
 \tservers {{
@@ -18,13 +31,9 @@ def caddyfile(domain: str, users: list[dict]) -> str:
 \t}}
 }}
 
-{domain} {{
+:443, {domain} {{
 \troute {{
-\t\tforward_proxy {{{auth_lines}
-\t\t\thide_ip
-\t\t\thide_via
-\t\t}}
-\t\thandle /api/* {{
+{forward_proxy_block}\t\thandle /api/* {{
 \t\t\treverse_proxy fastapi:8000
 \t\t}}
 \t\thandle /sub/* {{
@@ -42,16 +51,38 @@ def caddyfile(domain: str, users: list[dict]) -> str:
 """
 
 
+def _naive_outbound(domain: str, username: str, password: str) -> dict:
+    return {
+        "type": "naive",
+        "tag": "proxy",
+        "server": domain,
+        "server_port": 443,
+        "username": username,
+        "password": password,
+        "tls": {"enabled": True, "server_name": domain},
+    }
+
+
 def subscription(domain: str, username: str, password: str) -> str:
+    """Full standalone sing-box profile (log + mixed inbound + naive outbound +
+    route). For "bare" clients (sing-box CLI/app, Karing) that run the config
+    verbatim and need an inbound to listen on."""
     cfg = {
-        "outbounds": [{
-            "type": "naive",
-            "tag": "proxy",
-            "server": domain,
-            "server_port": 443,
-            "username": username,
-            "password": password,
-            "tls": {"enabled": True, "server_name": domain},
-        }]
+        "log": {"level": "info"},
+        "inbounds": [{
+            "type": "mixed",
+            "tag": "mixed-in",
+            "listen": "127.0.0.1",
+            "listen_port": 2082,
+        }],
+        "outbounds": [_naive_outbound(domain, username, password)],
+        "route": {"final": "proxy"},
     }
     return json.dumps(cfg, indent=2)
+
+
+def subscription_outbounds(domain: str, username: str, password: str) -> str:
+    """Outbounds-only fragment for "managed" clients (Hiddify, Happ) that inject
+    their own tun inbound + route/dns. An embedded inbound bound to a specific
+    IP breaks them (Happ: "Listen on specific ip"; Hiddify: route conflict)."""
+    return json.dumps({"outbounds": [_naive_outbound(domain, username, password)]}, indent=2)
