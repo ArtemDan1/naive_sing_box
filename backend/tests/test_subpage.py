@@ -33,3 +33,35 @@ def test_build_deeplinks_encodes_url():
         "hiddify://import/https%3A%2F%2Fvpn.example.com%2Fsub%2Fabc"
     )
     assert dl["copy"] == sub
+
+
+def test_render_sub_page_contains_context_and_assets():
+    from app.subpage import render_sub_page
+    html = render_sub_page(
+        label="My Phone",
+        sub_url="https://vpn.example.com/sub/abc",
+        platform="desktop",
+    )
+    assert "<!doctype html>" in html.lower()
+    assert '/admin/assets/sub.js' in html
+    assert '/admin/assets/sub.css' in html
+    assert 'window.__SUB__' in html
+    assert "My Phone" in html
+    assert "https://vpn.example.com/sub/abc" in html
+    assert '"platform": "desktop"' in html
+    assert '"karing"' in html
+
+
+def test_render_sub_page_escapes_label_for_script():
+    from app.subpage import render_sub_page
+    html = render_sub_page(
+        label="</script><b>x", sub_url="https://h/sub/a", platform="mobile"
+    )
+    assert "</script><b>x" not in html
+
+
+def test_render_sub_404_is_html():
+    from app.subpage import render_sub_404
+    html = render_sub_404()
+    assert "<!doctype html>" in html.lower()
+    assert "не найдена" in html.lower()
