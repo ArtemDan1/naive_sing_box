@@ -74,3 +74,41 @@ def test_subscription_disabled_404(client, db_session):
     )
     db_session.commit()
     assert client.get("/sub/abc").status_code == 404
+
+
+_BROWSER_UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Safari/605.1.15"
+
+
+def test_subscription_browser_gets_html_page(client, db_session):
+    _seed_domain(db_session)
+    db_session.add(
+        Client(label="My Phone", username="alice", password="pw1", sub_uuid="abc", enabled=True)
+    )
+    db_session.commit()
+    r = client.get("/sub/abc", headers={"user-agent": _BROWSER_UA})
+    assert r.status_code == 200
+    assert r.headers["content-type"].startswith("text/html")
+    assert "window.__SUB__" in r.text
+    assert "My Phone" in r.text
+    assert "vpn.example.com/sub/abc" in r.text
+    assert '"platform": "desktop"' in r.text
+
+
+def test_subscription_client_still_gets_json(client, db_session):
+    # Regression: non-browser UA must keep returning the JSON profile.
+    _seed_domain(db_session)
+    db_session.add(
+        Client(label="My Phone", username="alice", password="pw1", sub_uuid="abc", enabled=True)
+    )
+    db_session.commit()
+    r = client.get("/sub/abc", headers={"user-agent": "sing-box/1.8.0"})
+    assert r.headers["content-type"].startswith("application/json")
+    json.loads(r.text)  # parses
+
+
+def test_subscription_browser_404_is_html(client, db_session):
+    _seed_domain(db_session)
+    r = client.get("/sub/nope", headers={"user-agent": _BROWSER_UA})
+    assert r.status_code == 404
+    assert r.headers["content-type"].startswith("text/html")
+    assert "не найдена" in r.text.lower()
